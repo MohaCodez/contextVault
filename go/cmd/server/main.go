@@ -3,16 +3,24 @@ package main
 import (
 	"log"
 	"net/http"
-)
+	"os"
 
-func healthHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("ok"))
-}
+	"contextvault/go/internal/api/handlers"
+	"contextvault/go/internal/clients"
+)
 
 func main() {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/health", healthHandler)
+
+	pythonURL := os.Getenv("PYTHON_SERVICE_URL")
+	if pythonURL == "" {
+		pythonURL = "http://localhost:8000"
+	}
+
+	pythonClient := clients.NewPythonClient(pythonURL)
+
+	mux.HandleFunc("/health", handlers.HealthHandler)
+	mux.HandleFunc("/python-health", handlers.PythonHealthHandler(pythonClient))
 
 	log.Println("ContextVault Go service running on :8080")
 	log.Fatal(http.ListenAndServe(":8080", mux))
